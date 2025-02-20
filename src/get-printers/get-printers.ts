@@ -5,28 +5,31 @@ import { Printer } from "..";
 
 async function getPrinters(): Promise<Printer[]> {
   function stdoutHandler(stdout: string) {
-    const printers: Printer[] = [];
+    try {
+      const printersRaw = JSON.parse(stdout);
+      const printersArray = Array.isArray(printersRaw) ? printersRaw : [printersRaw];
 
-    stdout
-      .split(/(\r?\n){2,}/)
-      .map((printer) => printer.trim())
-      .filter((printer) => !!printer)
-      .forEach((printer) => {
-        const { isValid, printerData } = isValidPrinter(printer);
-
-        if (!isValid) return;
-
-        printers.push(printerData);
-      });
-
-    return printers;
+      return printersArray
+        .map(({ DeviceID, Name, PrinterPaperNames }) => {
+          const printerData = {
+            deviceId: String(DeviceID),
+            name: String(Name),
+            paperSizes: PrinterPaperNames || [],
+          };
+          return isValidPrinter(printerData.name).isValid ? printerData : null;
+        })
+        .filter((printer): printer is Printer => printer !== null);
+    } catch (error) {
+      console.error("Erro ao processar saída do PowerShell:", error);
+      return [];
+    }
   }
 
   try {
     throwIfUnsupportedOperatingSystem();
     const { stdout } = await execFileAsync("Powershell.exe", [
       "-Command",
-      `Get-CimInstance Win32_Printer -Property DeviceID,Name,PrinterPaperNames`,
+      "Get-CimInstance Win32_Printer | Select-Object DeviceID,Name,PrinterPaperNames | ConvertTo-Json -Compress",
     ]);
     return stdoutHandler(stdout);
   } catch (error) {
