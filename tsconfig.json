@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "outDir": "dist",
     "declaration": true,
     "rootDir": "./src",
+    "outDir": "./dist",
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -11,5 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true
   },
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.spec.ts"],
+  "include": [
+    "src/**/*.ts"
+  ]
 }
