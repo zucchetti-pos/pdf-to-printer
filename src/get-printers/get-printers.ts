@@ -1,47 +1,53 @@
-import execFileAsync from "../utils/exec-file-async";
-import isValidPrinter from "../utils/windows-printer-valid";
-import throwIfUnsupportedOperatingSystem from "../utils/throw-if-unsupported-os";
 import { Printer } from "..";
+import execFileAsync from "../utils/exec-file-async";
 
 async function getPrinters(): Promise<Printer[]> {
   function stdoutHandler(stdout: string) {
     try {
-      let printersRaw;
-      
-      if (stdout.trim().startsWith("{") || stdout.trim().startsWith("[")) {
-        printersRaw = JSON.parse(stdout);
-      } else {
-        throw new Error("Invalid JSON string");
+      if (!stdout || stdout.trim().length === 0) {
+        throw new Error("Saída do PowerShell vazia ou inválida.");
       }
 
+      if (!(stdout.trim().startsWith("{") || stdout.trim().startsWith("["))) {
+        throw new Error("Saída não é um JSON válido.");
+      }
+
+      const printersRaw = JSON.parse(stdout);
       const printersArray = Array.isArray(printersRaw)
         ? printersRaw
         : [printersRaw];
 
-      return printersArray
-        .map(({ DeviceID, Name, PrinterPaperNames }) => {
-          const printerData = {
-            deviceId: String(DeviceID),
-            name: String(Name),
-            paperSizes: PrinterPaperNames || [],
-          };
-          return isValidPrinter(printerData.name).isValid ? printerData : null;
-        })
-        .filter((printer): printer is Printer => printer !== null);
+      return printersArray.map(({ DeviceID, Name, PrinterPaperNames }) => {
+        return {
+          deviceId: String(DeviceID),
+          name: String(Name),
+          paperSizes: (PrinterPaperNames || []).map((paperName: string) => String(paperName)),
+        };
+      });
     } catch (error) {
-      console.error("Erro ao processar saída do PowerShell:", error);
+      console.error(
+        "Erro ao processar saída do PowerShell:",
+        error instanceof Error ? error.message : error
+      );
       return [];
     }
   }
 
   try {
-    throwIfUnsupportedOperatingSystem();
     const { stdout } = await execFileAsync("Powershell.exe", [
       "-Command",
       "Get-CimInstance Win32_Printer | Select-Object DeviceID,Name,PrinterPaperNames | ConvertTo-Json -Compress",
     ]);
+
+    let fixedString = Buffer.from(stdout, 'latin1').toString('utf8');
+
+    console.log(fixedString)
     return stdoutHandler(stdout);
   } catch (error) {
+    console.error(
+      "Erro ao executar comando do PowerShell:",
+      error instanceof Error ? error.message : error
+    );
     throw error;
   }
 }
