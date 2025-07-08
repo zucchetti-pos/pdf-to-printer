@@ -21,7 +21,9 @@ async function getPrinters(): Promise<Printer[]> {
         return {
           deviceId: String(DeviceID),
           name: String(Name),
-          paperSizes: (PrinterPaperNames || []).map((paperName: string) => String(paperName)),
+          paperSizes: (PrinterPaperNames || []).map((paperName: string) =>
+            String(paperName)
+          ),
         };
       });
     } catch (error) {
@@ -39,9 +41,9 @@ async function getPrinters(): Promise<Printer[]> {
       "Get-CimInstance Win32_Printer | Select-Object DeviceID,Name,PrinterPaperNames | ConvertTo-Json -Compress",
     ]);
 
-    let fixedString = Buffer.from(stdout, 'latin1').toString('utf8');
+    let fixedString = Buffer.from(stdout, "latin1").toString("utf8");
 
-    console.log(fixedString)
+    console.log(fixedString);
     return stdoutHandler(stdout);
   } catch (error) {
     console.error(
