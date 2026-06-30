@@ -38,12 +38,10 @@ async function getPrinters(): Promise<Printer[]> {
   try {
     const { stdout } = await execFileAsync("Powershell.exe", [
       "-Command",
-      "Get-CimInstance Win32_Printer | Select-Object DeviceID,Name,PrinterPaperNames | ConvertTo-Json -Compress",
+      "$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " +
+        "Get-CimInstance Win32_Printer | Select-Object DeviceID,Name,PrinterPaperNames | ConvertTo-Json -Compress",
     ]);
 
-    let fixedString = Buffer.from(stdout, "latin1").toString("utf8");
-
-    console.log(fixedString);
     return stdoutHandler(stdout);
   } catch (error) {
     console.error(
