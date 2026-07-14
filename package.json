@@ -16,7 +16,7 @@
     "test": "jest",
     "lint": "prettier --write .",
     "build": "webpack --config webpack.production.config.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build && tsc --emitDeclarationOnly"
   },
   "husky": {
     "hooks": {

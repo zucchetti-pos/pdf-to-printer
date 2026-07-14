@@ -9,6 +9,44 @@ jest.mock("../utils/throw-if-unsupported-os");
 
 const mockedExecFileAsync = mocked(execFileAsync);
 
+const exactProblematicWindowsOutputAsLibraryJson = JSON.stringify([
+  {
+    DeviceID: "TANCA TP-650",
+    Name: "TANCA TP-650",
+    PrinterPaperNames: [
+      "Printer 80(72.1) x 210 mm",
+      "Printer 80(72.1) x 297 mm",
+      "Printer 80(72.1) x 3276 mm",
+      "Printer 80(72.1) x 99999 mm",
+    ],
+  },
+  {
+    DeviceID: "OneNote for Windows 10",
+    Name: "OneNote for Windows 10",
+    PrinterPaperNames: ["Carta", "A4"],
+  },
+  {
+    DeviceID: "Microsoft XPS Document Writer",
+    Name: "Microsoft XPS Document Writer",
+    PrinterPaperNames: ["Carta", "Carta pequeno", "Tablóide", "Ledger..."],
+  },
+  {
+    DeviceID: "Microsoft Print to PDF",
+    Name: "Microsoft Print to PDF",
+    PrinterPaperNames: ["Carta", "Tablóide", "Ofício", "Extrato..."],
+  },
+  {
+    DeviceID: "Fax",
+    Name: "Fax",
+    PrinterPaperNames: ["Carta", "Carta pequeno", "Ofício", "Extrato..."],
+  },
+  {
+    DeviceID: "AnyDesk Printer",
+    Name: "AnyDesk Printer",
+    PrinterPaperNames: ["Carta", "Tablóide", "Ofício", "Executivo..."],
+  },
+]);
+
 describe("getPrinters", () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -75,5 +113,55 @@ describe("getPrinters", () => {
         paperSizes: ["A4", "Letter"],
       },
     ]);
+  });
+
+  it("should parse the problematic Windows output converted to the library JSON format", async () => {
+    mockedExecFileAsync.mockResolvedValue({
+      stdout: exactProblematicWindowsOutputAsLibraryJson,
+      stderr: "",
+    });
+    const consoleLog = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined);
+
+    await expect(getPrinters()).resolves.toEqual([
+      {
+        deviceId: "TANCA TP-650",
+        name: "TANCA TP-650",
+        paperSizes: [
+          "Printer 80(72.1) x 210 mm",
+          "Printer 80(72.1) x 297 mm",
+          "Printer 80(72.1) x 3276 mm",
+          "Printer 80(72.1) x 99999 mm",
+        ],
+      },
+      {
+        deviceId: "OneNote for Windows 10",
+        name: "OneNote for Windows 10",
+        paperSizes: ["Carta", "A4"],
+      },
+      {
+        deviceId: "Microsoft XPS Document Writer",
+        name: "Microsoft XPS Document Writer",
+        paperSizes: ["Carta", "Carta pequeno", "Tablóide", "Ledger..."],
+      },
+      {
+        deviceId: "Microsoft Print to PDF",
+        name: "Microsoft Print to PDF",
+        paperSizes: ["Carta", "Tablóide", "Ofício", "Extrato..."],
+      },
+      {
+        deviceId: "Fax",
+        name: "Fax",
+        paperSizes: ["Carta", "Carta pequeno", "Ofício", "Extrato..."],
+      },
+      {
+        deviceId: "AnyDesk Printer",
+        name: "AnyDesk Printer",
+        paperSizes: ["Carta", "Tablóide", "Ofício", "Executivo..."],
+      },
+    ]);
+
+    consoleLog.mockRestore();
   });
 });
